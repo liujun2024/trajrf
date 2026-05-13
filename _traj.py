@@ -19,21 +19,48 @@ class RunHYSPLIT:
     def __init__(
             self,
             dir_save: Path,         # Directory for saving trajectories
-            dir_working: Path,      # Working directory for HYSPLIT
             dir_meteo: Path,        # Directory for meteorological data
-            path_exe: Path,         # Path of the HYSPLIT executable file
             dict_coords: dict,      # Dictionary containing the coordinates of single or multiple sites, {'1001A': [lat, lon], '1002A': [lat, lon], ...}
             m_agl: int,             # The starting height (Above Ground Level, AGL) of the backward trajectory, unit: m
-            datetime: list,         # The start and end time (UTC time) of batching trajectory, ['2020-01-01 10:00:00', '2020-01-31 23:00:00']
+            datetime: list[str, str],         # The start and end time (UTC time) of batching trajectory, ['2020-01-01 10:00:00', '2020-01-31 23:00:00']
+            # dir_working: Path | None = None,      # Working directory for HYSPLIT
+            # path_exe: Path | None = None,         # Path of the HYSPLIT executable file
             basename='',            # The prefix of the trajectory files
             runtime=-48,            # The total runtime of each trajectory, backward: negative, forward: positive, unit: hour
             ) -> None:
 
+        """
+        Parameters
+        ----------
+        dir_save: Path
+            轨迹数据保存路径
+        dir_meteo: Path
+            气象数据 (gdas1) 所在路径
+        dict_coords: dict
+            单站或多站坐标字典，{'1001A': [lat, lon], '1002A': [lat, lon], ...}
+        m_agl: int
+            轨迹起始高度 (AGL), 即受体站点高度, 单位: m
+        datetime: list
+            后向轨迹起止时间 (UTC时间), ['2020-01-01 10:00:00', '2020-01-31 23:00:00']
+        basename: str
+            轨迹文件名前缀
+        runtime: int
+            每条轨迹总运行时间, 后向: 负值, 前向: 正值, 单位: 小时
+            
+        Notes
+        -----
+        2026-05-13
+            删除dir_working和path_exe参数
+            添加检查gdas1文件是否存在的功能
+        """
+
+
         # 传参
         self.dir_traj = dir_save
-        self.dir_working = dir_working
         self.dir_meteo = dir_meteo
-        self.path_hysplit = path_exe
+        # self.dir_working = dir_working
+        self.dir_working = Path(__file__).parent / 'working'
+        self.path_hysplit = self.dir_working / 'hyts_std.exe'
         self.dict_coords = dict_coords
         self.basename = basename
         self.m_agl = m_agl
@@ -118,6 +145,11 @@ class RunHYSPLIT:
         list_files = ['gdas1.' + self.dict_month[i.month] + str(i.year)[2:] + self.dict_w[i.day] for i in dt_range]
 
         self.meteofiles = set(list_files)
+
+        # 检查文件是否都存在
+        for file in list_files:
+            if not (self.dir_meteo / file).exists():
+                raise FileNotFoundError(f'{self.dir_meteo / file} not found!')
 
     def _write2control(self):
         """ write configuration to CONTROL file """
