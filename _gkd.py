@@ -4,6 +4,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from itertools import chain
+from pathlib import Path
 
 
 class SiteInfo:
@@ -29,7 +30,7 @@ class SiteInfo:
         if path_site_list:
             self.path_site_list = path_site_list
         else:
-            self.path_site_list = 'NewSiteList.csv'
+            self.path_site_list = Path(__file__).parent / 'NewSiteList.csv'
 
         self.df_info = pd.read_csv(self.path_site_list, engine="c", low_memory=False, encoding="gbk")
 
